@@ -1,0 +1,36 @@
+
+{
+    "exclude": [
+      "data",
+      "outputs",
+      "**/__pycache__",
+      "**/build"
+    ],
+    
+    "pythonVersion": "3.8",
+    "pythonPlatform": "Linux",
+    "python.analysis.typeEvaluation.analyzeUnannotatedFunctions": false,
+    "python.analysis.typeEvaluation.strictDictionaryInference": false,
+    "python.analysis.typeEvaluation.enableTypeIgnoreComments": false,
+    "python.analysis.typeEvaluation.strictParameterNoneValue": false,
+    "reportIncompatibleMethodOverride":false,
+    "reportIndexIssue": false,
+    "reportCallIssue": false,
+    "reportArgumentType":false,
+    "reportPrivateImportUsage":false,
+    "reportOptionalSubscript":false,
+    "reportAttributeAccessIssue": false,
+    "reportGeneralTypeIssues": false,
+    "reportPossiblyUnboundVariable": false,
+    "reportMissingImports": false,
+    "reportOperatorIssue": false,
+    "reportOptionalMemberAccess": false,
+    "reportOptionalOperand": false,
+    "reportOptionalCall": false,
+    "reportUnsupportedDunderAll":false,
+    "reportInvalidTypeForm":false,
+    "reportReturnType":false,
+    "reportOptionalIterable":false,
+    "reportAssignmentType":false,
+    "reportUndefinedVariable":false
+  }
