@@ -1,11 +1,11 @@
 <div align="center">
 
-# StreamOPUS: Streamimg Occupancy Prediction Using a Sparse Set (CVPR 2026)
+# StreamOPUS: Streamimg Occupancy Prediction Using a Sparse Set (CVPR 2025)
 </div>
 
 ![demo](demos/teaser.png)
 
-> **OPUS: Occupancy Prediction Using a Saprse Set**
+> **StreamOPUS: Streamimg Occupancy Prediction Using a Saprse Set**
 > - Authors: [Jiabao Wang*](https://jbwang1997.github.io/),
 > [Zhaojiang Liu*](https://agito555.github.io/),
 > [Qiang Meng](https://irvingmeng.github.io/), Liujiang Yan, Ke Wang,
@@ -14,7 +14,7 @@
 > [Qibin Hou#](https://houqb.github.io/),
 > [Ming-Ming Cheng](https://mmcheng.net/cmm/) \
 > (* Equal contribition, # Corresponding author)
-> - [Paper in arXiv](https://arxiv.org/pdf/2409.09350) | [知乎](https://zhuanlan.zhihu.com/p/721102233)
+> - [Paper in arXiv](https://arxiv.org/pdf/2409.09350) | [知乎](https://www.zhihu.com/people/zai-jian-la-ji-ni)
 
 ## News
 
