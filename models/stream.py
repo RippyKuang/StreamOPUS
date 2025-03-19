@@ -27,14 +27,15 @@ def memory_refresh(memory, prev_exist):
 class Memory:
 
     def __init__(self, topk_proposals, num_propagated, memory_len, num_query, pc_range, embed_dims, num_points,with_ego_pos=True):
-        self.topk_proposals = topk_proposals #128
-        self.num_propagated = num_propagated #64
-        self.memory_len = memory_len #512
-        self.num_query = num_query #536
+        self.topk_proposals = topk_proposals 
+        self.num_propagated = num_propagated 
+        self.memory_len = memory_len 
+        self.num_query = num_query
         self.pc_range =torch.Tensor(pc_range).cuda()
-        self.embed_dims = embed_dims #256
-        self.num_points = num_points #128
-        self.with_ego_pos =with_ego_pos #True
+        self.embed_dims = embed_dims
+        self.num_points = num_points 
+        self.with_ego_pos =with_ego_pos
+
         if self.num_propagated > 0:
             self.pseudo_reference_points = nn.Parameter(torch.Tensor(self.num_propagated , num_points, 3)).cuda().detach()
 
@@ -101,37 +102,46 @@ class Memory:
             self.memory_reference_point[:, :self.num_propagated]  = self.memory_reference_point[:, :self.num_propagated] + (1 - x).view(B, 1, 1) * pseudo_reference_points
             self.memory_egopose[:, :self.num_propagated]  = self.memory_egopose[:, :self.num_propagated] + (1 - x).view(B, 1, 1, 1) * torch.eye(4, device='cuda')
 
+    def propagate(self, tgt, reference_points):
 
-    def temporal_alignment(self, tgt, reference_points):  # tgt: current query
-        query_pos = self.query_embedding(pos2posemb3d(reference_points.mean(-2)))
-        B = query_pos.size(0)
-
-        temp_reference_point = (self.memory_reference_point - self.pc_range[:3]) / (self.pc_range[3:6] - self.pc_range[0:3])
-        temp_pos = self.query_embedding(pos2posemb3d(temp_reference_point.mean(-2))) 
+        temp_reference_point = ((self.memory_reference_point - self.pc_range[:3]) / (self.pc_range[3:6] - self.pc_range[0:3])).mean(-2)
+        temp_pos = self.query_embedding(pos2posemb3d(temp_reference_point)) 
         temp_memory = self.memory_embedding
-        rec_ego_pose = torch.eye(4, device=query_pos.device).unsqueeze(0).unsqueeze(0).repeat(B, query_pos.size(1), 1, 1)
-        
+
         if self.with_ego_pos:
-            rec_ego_motion = torch.cat([torch.zeros_like(reference_points[...,:3].flatten(-2)), rec_ego_pose[..., :3, :].flatten(-2)], dim=-1)
-            rec_ego_motion = nerf_positional_encoding(rec_ego_motion)
-            tgt = self.ego_pose_memory(tgt, rec_ego_motion)
-            query_pos = self.ego_pose_pe(query_pos, rec_ego_motion)
-            memory_ego_motion = torch.cat([temp_reference_point.mean(-2), self.memory_egopose[..., :3, :].flatten(-2)], dim=-1).float()
+            memory_ego_motion = torch.cat([temp_reference_point, self.memory_egopose[..., :3, :].flatten(-2)], dim=-1).float()
             memory_ego_motion = nerf_positional_encoding(memory_ego_motion)
             temp_pos = self.ego_pose_pe(temp_pos, memory_ego_motion)
-            temp_memory = self.ego_pose_memory(temp_memory, memory_ego_motion)
 
-     #   query_pos += self.time_embedding(pos2posemb1d(torch.zeros_like(reference_points.mean(-2)[...,:1])))
-     #   temp_pos += self.time_embedding(pos2posemb1d(self.memory_timestamp).float())
+        temp_pos += self.time_embedding(pos2posemb1d(self.memory_timestamp).float())
 
         if self.num_propagated > 0:
             tgt = torch.cat([tgt, temp_memory[:, :self.num_propagated]], dim=1)
-           # query_pos = torch.cat([query_pos, temp_pos[:, :self.num_propagated]], dim=1)
-            reference_points = torch.cat([reference_points, temp_reference_point[:, :self.num_propagated].mean(2,keepdim=True)], dim=1)
-          #  temp_memory = temp_memory[:, self.num_propagated:]
-          #  temp_pos = temp_pos[:, self.num_propagated:]
-            
-        return tgt, reference_points
+            reference_points = torch.cat([reference_points, temp_reference_point[:, :self.num_propagated].unsqueeze(-2)], dim=1)
+            temp_memory = temp_memory[:, self.num_propagated:]
+            temp_pos = temp_pos[:, self.num_propagated:]
+
+        temp_memory = self.ego_pose_memory(temp_memory, memory_ego_motion[:, self.num_propagated:])
+
+        return tgt, reference_points, temp_memory, temp_pos
+
+
+    def temporal_alignment(self, tgt, reference_points):  # tgt: current query
+        center_points = reference_points.mean(-2)
+        query_pos = self.query_embedding(pos2posemb3d(center_points))
+        B = query_pos.size(0)
+
+        rec_ego_pose = torch.eye(4, device=query_pos.device).unsqueeze(0).unsqueeze(0).repeat(B, query_pos.size(1), 1, 1)
+        
+        if self.with_ego_pos:
+            rec_ego_motion = torch.cat([center_points, rec_ego_pose[..., :3, :].flatten(-2)], dim=-1)
+            rec_ego_motion = nerf_positional_encoding(rec_ego_motion)
+            aligned_query_feat = self.ego_pose_memory(tgt, rec_ego_motion) 
+            query_pos = self.ego_pose_pe(query_pos, rec_ego_motion)
+         
+        query_pos += self.time_embedding(pos2posemb1d(torch.zeros_like(center_points[...,:1])))
+        
+        return aligned_query_feat,query_pos
 
 
     def post_update_memory(self, metas, feats, all_scores, pts):
@@ -221,4 +231,6 @@ class HybridAttention(BaseModule):
                       use_reentrant=False)
         else:
             return self.inner_forward(query, query_pos, temp_memory, temp_pos)
+        
+
         

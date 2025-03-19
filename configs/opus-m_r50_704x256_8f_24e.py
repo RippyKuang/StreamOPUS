@@ -5,7 +5,7 @@ occ_root = 'data/nuscenes/gts/'
 
 batch_size = 8
 num_gpus = 8
-num_propagate = 128
+num_propagate = 0
 num_iters_per_epoch = 28130 // batch_size
 input_modality = dict(
     use_lidar=False,
@@ -35,7 +35,8 @@ voxel_size = [0.4, 0.4, 0.4]
 
 # arch config
 embed_dims = 256
-num_layers = 6
+num_fus_layers = 1
+num_layers = 6 -num_fus_layers
 num_query = 2400-num_propagate
 num_frames = 8
 num_levels = 4
@@ -63,14 +64,26 @@ img_norm_cfg = dict(
     to_rgb=True)
 
 mem_cfg = dict(  
-                 topk_proposals= 256,
+                 topk_proposals= num_query,
                  num_propagated= num_propagate,
-                 memory_len= 1024,
+                 memory_len= num_query,
                  num_query= num_query,
                  pc_range= point_cloud_range,
                  embed_dims = embed_dims,
                  num_points = num_refines[-1]
               )
+fusingformer = dict(
+                type='FusingTransformer',
+                embed_dims = embed_dims,
+                num_frames=num_frames,
+                num_points=num_points,
+                num_layers=num_fus_layers,
+                num_levels=num_levels,
+                num_classes= len(occ_names),
+                num_refines=num_refines[-(num_fus_layers+1):],
+                scales=[0.5],
+                pc_range=point_cloud_range,
+                )
 
 model = dict(
     type='OPUS',
@@ -101,6 +114,7 @@ model = dict(
             num_refines=num_refines,
             scales=[0.5],
             pc_range=point_cloud_range),
+        fusingformer=fusingformer,
         loss_cls=dict(
             type='FocalLoss',
             use_sigmoid=True,

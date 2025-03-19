@@ -175,8 +175,6 @@ class OPUSTransformerDecoderLayer(BaseModule):
             nn.LayerNorm(self.embed_dims),
             nn.ReLU(inplace=True),
         )
-
-      #  self.hybrid_attn = HybridAttention(embed_dims, num_heads=8, dropout=0.1)
         self.self_attn = OPUSSelfAttention(
             embed_dims, num_heads=8, dropout=0.1, pc_range=pc_range)
         self.sampling = OPUSSampling(embed_dims, num_frames=num_frames, num_views=num_views,
@@ -231,8 +229,7 @@ class OPUSTransformerDecoderLayer(BaseModule):
         query_points: [B, Q, 3] [x, y, z]
         """
         query_pos = self.position_encoder(query_points.flatten(2, 3))
-        # if temp_memory != None:
-        #     query_feat = self.norm0(self.hybrid_attn(query_feat, motion_query_pos, temp_memory, temp_pos))
+
         query_feat = query_feat + query_pos
         sampled_feat = self.sampling(
             query_points, query_feat, mlvl_feats, occ2img, img_metas)

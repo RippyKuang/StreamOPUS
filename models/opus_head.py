@@ -19,6 +19,7 @@ class OPUSHead(BaseModule):
                  num_query,
                  mem_cfg,
                  transformer=None,
+                 fusingformer=None,
                  pc_range=[],
                  empty_label=17,
                  voxel_size=[],
@@ -45,7 +46,7 @@ class OPUSHead(BaseModule):
         self.loss_cls = build_loss(loss_cls)
         self.loss_pts = build_loss(loss_pts)
         self.transformer = build_transformer(transformer)
-      
+        self.fusingformer = build_transformer(fusingformer)
         self.num_refines = self.transformer.num_refines
         self.embed_dims = self.transformer.embed_dims
 
@@ -87,11 +88,10 @@ class OPUSHead(BaseModule):
         self.memory.pre_update_memory(img_metas)
         init_points = self.init_points.weight[None, :, None, :].repeat(B, 1, 1, 1)
         
-        # main branch
         indices = torch.randperm(Q+P)[:Q]  
         splited_init_points = init_points[:,indices]
         query_feat = splited_init_points.new_zeros(B , Q, self.embed_dims)
-        hybrid_query_feat, hybrid_init_points = self.memory.temporal_alignment(query_feat,splited_init_points)
+        hybrid_query_feat, hybrid_init_points, temp_memory, temp_pos = self.memory.propagate(query_feat, splited_init_points)
 
         cls_scores, refine_pts, out_feat= self.transformer(
                 hybrid_init_points,
@@ -100,23 +100,16 @@ class OPUSHead(BaseModule):
                 img_metas
         )
 
-        # auxiliary branch
-        # aux_query_feat = init_points.new_zeros(B, Q+P, self.embed_dims)
-            
-        # aux_cls_scores, aux_refine_pts, _= self.transformer(
-        #         init_points,
-        #         aux_query_feat,
-        #         mlvl_feats,
-        #         img_metas
-        # )
-            
+        aligned_query_feat, aligned_query_pos =  self.memory.temporal_alignment(out_feat,refine_pts[-1])
         
+        last_cls_scores, last_refine_pts = self.fusingformer(out_feat, refine_pts[-1], aligned_query_feat,
+                                                            aligned_query_pos, temp_memory, temp_pos, mlvl_feats,img_metas)
         collected_metas=[dict((k, m[k]) for k in self.keys_to_keep if k in m) for m in img_metas]
-        self.memory.post_update_memory(collected_metas,out_feat,cls_scores[-1],refine_pts[-1])
+        self.memory.post_update_memory(collected_metas,out_feat,last_cls_scores[-1],last_refine_pts[-1])
         
         return  dict(init_points= splited_init_points,
-                    all_cls_scores= cls_scores,
-                    all_refine_pts= refine_pts,
+                    all_cls_scores= cls_scores+last_cls_scores,
+                    all_refine_pts= refine_pts+last_refine_pts,
                     )
                 
 

@@ -11,7 +11,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["--config","configs/opus-m_r50_704x256_8f_24e.py","--weights","outputs/OPUS/opus-m_r50_704x256_8f_24e_2025-03-11/03-57-45/latest.pth"]
+            "args": ["--config","configs/opus-t_r50_704x256_8f_24e.py"]
         }
     ]
 }
