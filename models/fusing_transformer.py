@@ -214,7 +214,8 @@ class FusingTransformerDecoderLayer(BaseModule):
         hybrid_feat = self.norm2(self.d_attn(hybrid_feat,hybrid_pos))
 
         hybrid_pos = hybrid_pos.permute(1,0,2)[:1,...]
-        hybrid_feat = self.norm3(self.h_attn(query_feat,query_pos,hybrid_feat,hybrid_pos))
+        hybrid_feat = self.norm3(self.h_attn(query_feat,query_pos,hybrid_feat,hybrid_pos)) # or hybrid_feat=self.ffn(torch.cat(hybrid_feat,query_feat))
+
         hybrid_feat = self.norm4(self.ffn(hybrid_feat))
         B, Q = query_points.shape[:2]
         cls_score = self.cls_branch(hybrid_feat) 
