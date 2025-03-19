@@ -1,6 +1,6 @@
 <div align="center">
 
-# OPUS: Occupancy Prediction Using a Sparse Set (NeurIPS 2024)
+# StreamOPUS: Streamimg Occupancy Prediction Using a Sparse Set (CVPR 2026)
 </div>
 
 ![demo](demos/teaser.png)
